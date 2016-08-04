@@ -1,6 +1,6 @@
 # swift-mokumoku
 ## 現在の活動
-- [Writing High-Performance Swift Code](https://github.com/apple/swift/blob/master/docs/OptimizationTips.rst)を読んで[翻訳](https://github.com/satomiretriever/swift-mokumoku/blob/master/OptimizationTips-jp.md)する
+- [Writing High-Performance Swift Code](https://github.com/apple/swift/blob/master/docs/OptimizationTips.rst)を読んで[翻訳](https://github.com/satomiretriever/swift-mokumoku/blob/master/Writing%20High-Performance%20Swift%20Code/OptimizationTips-jp.md)する
 
 
 ## これまでの活動
