@@ -95,6 +95,24 @@ func usingF(_ f: F) {
 }
 ```
 
+# コンテナの型を効率的に使う
+Swiftの標準ライブラリで提供される重要な機能に、ArrayやDictionaryのGenericコンテナがあります。このセクションでは、これらの型を効果的に使う方法を説明します。
+
+## アドバイス: ArrayではValue Typesを使いましょう
+Swiftでは、方は2つのカテゴリに分けられます。1つはValue Types(structs, enum, tuples) そしてもう一つは、Reference Types(classes)です。これらを区別するキーポイントは、Value TypesはNSArrayの中に含まれることは出来ないということです。それゆえ、Value Typesを使うときは、NSArrayに裏付けされたarrayの可能性を操作する必要があるArrayでのオーバーヘッドのほとんどを、Optimizerが削除できるのです。
+更に、Reference Typeと較べて、Value TypesはReference Typesを再帰的に保有するなら、参照の数のみが必要になります。Reference TypesなしにValue Typesを使うことで、Arrayの中でトラフィックを保持した開放したりする追加的な処理をしなくてもよいのです。
+
+```swift
+// Don not use a class here.
+struct PhonebookEntry {
+  var name : String
+  var number : [Int]
+}
+
+var a : [PhonebookEntry]
+```
+
+大きなValue Typesの使用とReference Typesの使用はトレードオフの関係にあることを心に止めてください。大きなValue Typesをコピーしたり移動させるオーバーヘッドは、そのブリッジングを削除することととオーバーヘッドを保持・解放することのコストをこえるでしょう。
 
 # 脚注
 - 1. vtable: 仮想メソッドテーブルもしくは `vtable` は型特定テーブルで型メソッドのアドレスを持つインスタンスに関連されます。Dynamic Dispatchはまずオブジェクトからテーブルを検索することで進行し、次にテーブルのメソッドを検索します。
