@@ -114,6 +114,84 @@ var a : [PhonebookEntry]
 
 大きなValue Typesの使用とReference Typesの使用はトレードオフの関係にあることを心に止めてください。大きなValue Typesをコピーしたり移動させるオーバーヘッドは、そのブリッジングを削除することととオーバーヘッドを保持・解放することのコストをこえるでしょう。
 
+## アドバイス: NSArray bridgingが不必要な際には、references typesとともにCOntiguousArrayを使いましょう
+
+もしreference typesのarrayが必要で、そのarrayがNSArrauへのbridgingを必要としないなら、ArrayではなくContiguousArrayを使いましょう。
+
+```swift
+class C { ... }
+var a: ContiguousArray<C> = [C(...), ..., C(...)]
+```
+
+## アドバイス: object-reassignmentの代わりに、配置済みのmutationを使いましょう
+すべてのSwiftの標準ライブラリコンテナは、COW(copy-on-write)を正確なコピーの代わりに用いるvalue typesです。多くの場合、これによりコンパイラはdeep copyをする代わりにコンテナを保つことで不必要なコピーを省略できます。これは、もし、コンテナのreference count数が1より大きく、コンテナがmutatedなら、下層コンテナをただコピーすることでなされます。例えば、次の様に、 `d` が  `c` にアサインされるときにコピーは起きませんが、 `2` がたされることとで `d` はstructural mutationを行うとき、 `d` はコピーされ `2` は `d` にたされます。
+
+```swift
+var c: [Int] = [ ... ]
+var d = c // No copu will occur here.
+d.append(2) // A copy *does* occur here.
+```
+
+もしユーザーが注意深くなければ、時々COWは予期しないコピーをします。例えば、関数のobject-reassignmentを通じたmutationを試みます。Swiftでは、すべてのパラメーターは `+1` でわたされます。パラメーターはcallsiteの前に保持され、そして呼びだされたものが終了するときに解放されます。之は、次の様に関数を書くことを意味します。
+
+```swift
+func append_one(_ a: [Int]) -> [int] {
+  a.append(1)
+  return a
+}
+
+var a = [1, 2, 3]
+a = append_one(a)
+```
+
+`a` は `a` のバージョンによらずコピーされ、assignmentにより `append_one` の後に使われることはない。これは、 `inout` パラメーターの使用をすることで避けられます。
+
+```swift
+func append_one_in_place(a: input [Int]) {
+  a.append(1)
+}
+
+var a = [1, 2, 3]
+append_one_in_place(&a)
+```
+# Unchecked Operation
+Swiftは、標準の計算を行う際は、overflowのチェックをすることで、integer overflowのバグを排除します。これらのチェックは、ハイパフォーマンスを求めるなら適切ではありません。
+
+## アドバイス: overflowが起きないと証明出来るときは、unchecked integer arithmeticを使いましょう
+
+パフォーマンスを最重要とするコードでは、安全だと言える場合にはoverflowのチェックを省略します。
+
+```swift
+a: [Int]
+b: [Int]
+c: [Int]
+
+// Precondition: for all a[i], b[i]: [i] + b[i] does not overflow!
+for i in 0 ... n {
+  c[i] = a[i] &+ b[i]
+}
+```
+
+# Generics
+tba
+
+# The const of large Swift values
+tba
+
+# Unsafe code
+tba
+
+# Protocols
+## アドバイス: プロトコルは、class-protocolsのようなclassesによってのみ満たされると注意しましょう
+
+Swiftはclassのprotocol adoptionにのみ制限されます。class-onlyのprotocolのマークのアドバンテージは、classだけがprotocolを満たすことを知ることを基礎に持つプログラムを、コンパイラは最適化出来ます。例えば、ARC memory management systemは、クラスにまつわることと認識していれば、簡単に保持（objectの参照数を増加）できます。この認識がないと、コンパイラは、structがprotocolを満たすかもしれないと踏みかねず、小さくなくとてもコストが掛かる構造を保持、解放する必要がでてきます。
+
+もし、classのprotocolの採用制限を知っていれば、cloass-only protocolとしてのmark protocolsはruntimeでよりハイパフォーマンスになります。
+
+```swift
+protocol Pingable : class { func ping() -> Int }
+```
+
 # 脚注
 - 1. vtable: 仮想メソッドテーブルもしくは `vtable` は型特定テーブルで型メソッドのアドレスを持つインスタンスに関連されます。Dynamic Dispatchはまずオブジェクトからテーブルを検索することで進行し、次にテーブルのメソッドを検索します。
 - 2. これはコンパイラがどの関数を呼び出すかしらないことによります。
