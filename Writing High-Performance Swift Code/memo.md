@@ -15,11 +15,11 @@ https://github.com/apple/swift/blob/master/docs/OptimizationTips.rst
 
 大きなValue Typesの使用とReference Typesの使用はトレードオフの関係にあることを
 
-# 安全性を確保の上でinteger overflowのチェックをしないことで、パフォーマンスは向上する
+## 安全性を確保の上でinteger overflowのチェックをしないことで、パフォーマンスは向上する
 
-# Generics
+## Generics
 
-# protocolにはstructではなくclass! classだけ
+## protocolにはstructではなくclass! classだけ
 
 # 参考
 - [[Swift]動的ディスパッチを減らすことでパフォーマンスを改善](http://blog.andgenie.jp/articles/843)
