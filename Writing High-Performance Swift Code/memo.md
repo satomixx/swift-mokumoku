@@ -19,7 +19,7 @@ https://github.com/apple/swift/blob/master/docs/OptimizationTips.rst
 
 ## Generics
 
-## protocolにはstructではなくclass! classだけ
+## protocolにはstructではなくclass
 
 # 参考
 - [[Swift]動的ディスパッチを減らすことでパフォーマンスを改善](http://blog.andgenie.jp/articles/843)
