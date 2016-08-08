@@ -173,13 +173,119 @@ for i in 0 ... n {
 ```
 
 # Generics
-tba
+SwiftはGeneric Typesを使うことでとても強力な抽象化メカニズムを提供します。Swiftコンパイラは どの `T` に対して働くことができる `MySwiftFunc<T>` 具体的なコードのブロックを放出します。生成されたコードはfunction pointersのテーブルと追加パラメータとしての `T` を持つboxを持ちます。 `MySwiftFunc<Int>` と `MySwiftFunc<String>` の振る舞いの違いは、異なるfunction pointersテーブルをパスすることや、boxにより提供される抽象化の規模で算出されます。以下Genericの例です。
+
+```swift
+class MySwiftFunc<T> { ... }
+
+MySwiftFunc<Int> X // Will emit code that works with Int...
+MySwiftFunc<String> Y // ... as well as String
+```
+
+最適化が可能なとき、Swiftコンパイラはそのようなコードの起動を見て、起動時に使われる non-generic type の様な具体性を突き止めようとします。もし、generic functionの定義がoptimizerによって見ることが出来、concrete typeが知られたら、Swiftコンパイラは特定の型に特別化されたgeneric functionのバージョンを放出します。このプロセスは *specialization* と呼ばれ、genericsに関連づいたオーバーヘッドを削除することが出来ます。
+
+```swift
+class MyStack<T> {
+  func push(_ element: T) { ... }
+  func pop() -> T { ... }
+}
+
+func myAlgorithm(_ a: [T], length: Int) { ... }
+
+// The compiler can specialize code of MyStack<Int>
+var stackOfInts: MyStack<Int>
+// Use stack of Int.
+for i in ... {
+  stack.push(...)
+  stack.pop(...)
+}
+
+var arrayOfInts: [Int]
+// The compiler can emit a specialized version of 'myAlgorithmn' targeted for 
+// [Int] types.
+myAlgorithm(arrayOfInts, arrayOfInts.length)
+```
+
+## アドバイス: Genericの宣言は、使用されているのと同じモジュールに置くこと
+Optimizerは、generic declarationの定義が現在のモジュール内で可視的である場合にはspecializationをすることが出来ます。これは、もし宣言がgenericの起動ファイルと同じfileにある場合で、 `-whole-module-optimization` フラグが使われている場合に発生します。標準ライブラリは特別です。標準ライブラリでの定義はすべてのモジュールに可視的で、specializationが可能です。
+
+## アドバイス:  Genericをspecializeするコンパイラに @_specialize を用いること
+もし呼ぶ場所と呼ばれた関数が同じモジュールにあるなら、コンパイラはただただ自動的にgenericコードをspecializeします。しかし、プログラマは @_specialize 属性のフォーム内でコンパイラにヒントを与えることが出来ます。例えば[これをみてください。](https://github.com/apple/swift/blob/master/docs/OptimizationTips.rst#id6)
+
+この属性はコンパイラに特定の具体的な型リストをspecializeするようにコンパイラに指示します。コンパイラは型チェックを行いgeneric functionから特定の変数に送ります。次の例では、@_specialize 属性を注入したことで、コードが10倍早くなります。
+
+```swift
+/// ---------------
+/// Framework.swift
+
+public protocol Pingable { func ping() -> Self }
+public protocol Playable { func play() }
+
+extension Int : Pingable {
+    public func ping() -> Int { return self + 1 }
+}
+
+public class Game<T : Pingable> : Playable {
+    var t : T
+
+    public init (_ v : T) {t = v}
+
+    @_specialize(Int)
+    public func play() {
+      for _ in 0...100_000_000 { t = t.ping() }
+    }
+}
+
+/// -----------------
+/// Application.swift
+
+Game(10).play
+```
+
 
 # The const of large Swift values
 tba
 
 # Unsafe code
-tba
+Swiftのクラスは常にReferenceをカウントされます。Swiftのコンパイラはオブジェクトがアクセスされる度にReference Countを増加させます。例えば、クラスを使って実装されたLkinked listをスキャンする問題を考えてみてください。リストをスキャンすることは、あるノードから `elem = elem.next` へリファレンスを移動されることでなされます。私たちがReferenceを移動させる度に、Swiftは `next` オブジェクトへのReference Countを増加させ、以前のオブジェクトへの Reference Countを減少させます。これらのReference Count Operationはとても高価なものであり、Swiftクラスを使う際には、避けることができません。
+
+```swift
+final class Node {
+  var next: Node?
+  var data: Int
+}
+```
+
+## アドバイス: Reference Countのオーバーヘッドを避ける為に Unmanaged Referenceを用いること
+`Unmanaged<T>`._withUnsafeGuaranteeRef` はPublic APIではなく、将来的になくなることに留意してください。それ故に、将来的に変更しないコードには使わないでください。
+
+Performance-criticalなコードでは、unmanaged referencesを使うことが選択肢になります。 `Unmanaged<T>` の構造は開発者に特定のReferenceへの自動的なReference Countを不能にすることを許可します。
+
+これをするとき、 インスタンスを行きた状態をキープする `Unmanaged` を使用する間は `Unmanaged` 構成のインスタンスによるインスタンスへの別のReferenceが存在していることを確認する必要があります。（詳細は[こちら Unmanaged.swift](https://github.com/apple/swift/blob/master/stdlib/public/core/Unmanaged.swift)）
+
+```swift
+// The call to ``withExtendedLifetime(Head)`` makes sure that the lifetime of
+// Head is guaranteed to extend over the region of code that uses Unmanaged
+// references. Because there exists a reference to Head for the duration
+// of the scope and we don't modify the list of ``Node``s there also exist a
+// reference through the chain of ``Head.next``, ``Head.next.next``, ...
+// instances.
+
+withExtendedLifetime(Head) {
+
+  // Create an Unmanaged reference.
+  var Ref : Unmanaged<Node> = Unmanaged.passUnretained(Head)
+
+  // Use the unmanaged reference in a call/variable access. The use of
+  // _withUnsafeGuaranteedRef allows the compiler to remove the ultimate
+  // retain/release across the call/access.
+
+  while let Next = Ref._withUnsafeGuaranteedRef { $0.next } {
+    ...
+    Ref = Unmanaged.passUnretained(Next)
+  }
+}
+```
 
 # Protocols
 ## アドバイス: プロトコルは、class-protocolsのようなclassesによってのみ満たされると注意しましょう
@@ -191,6 +297,8 @@ Swiftはclassのprotocol adoptionにのみ制限されます。class-onlyのprot
 ```swift
 protocol Pingable : class { func ping() -> Int }
 ```
+
+
 
 # 脚注
 - 1. vtable: 仮想メソッドテーブルもしくは `vtable` は型特定テーブルで型メソッドのアドレスを持つインスタンスに関連されます。Dynamic Dispatchはまずオブジェクトからテーブルを検索することで進行し、次にテーブルのメソッドを検索します。
