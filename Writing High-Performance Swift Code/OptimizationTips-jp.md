@@ -1,13 +1,13 @@
 # Writing High-Performance Swift Code
 - [最適化を可能にする](#最適化を可能にする)
 - [モジュール全体の最適化](#モジュール全体の最適化)
-- [Dynamic Dispatchの削減](#Dynamic Dispatchの削減)
+- [Dynamic Dispatchの削減](#dynamic-dispatchの削減)
 - [コンテナの型を効率的に使う](#コンテナの型を効率的に使う)
 - [Unchecked Operation](#unchecked-operation)
-- [Generics](#Generics)
-- [The cost of large Swift values](#The cost of large Swift values)
-- [Unsafe code](#Unsafe code)
-- [Protocols](#Protocols)
+- [Generics](#generics)
+- [The cost of large Swift values](#the-cost-of-large-swift-values)
+- [Unsafe code](#unsafe-code)
+- [Protocols](#protocols)
 
 ## 最適化を可能にする
 最適化を可能にすることは常に第一にやるべきことです。Swiftに3つの異なる最適化のレベルがあります。
