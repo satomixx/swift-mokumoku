@@ -244,7 +244,68 @@ Game(10).play
 
 
 # The const of large Swift values
-tba
+Swiftでは、値はデータのユニークなコピーを保持します。値が特別な状態を保証するような、value-typesを使う幾つかのアドバンテージがあります。値をコピーするとき（assignmentの影響やinitialization、引数の引き渡し）、プログラムは新しい値のコピーを作ります。大きな値の場合は、これらのコピーには時間がかかり、プログラムのパフォーマンスにダメージを与えます。
+
+"value"ノードを使ったTreeを定義した以下の例を考えてみてください。Treeノードはprotocolを使う他のノードを持ちます。CGでは、シーンは、値として表現できる異なる権限や変異形から構成されたりします。なのでこの例は現実的だったりします。
+
+```swift
+protocol P {}
+struct Node : P {
+    var left, right : P?
+}
+
+struct Tree {
+    var node : P?
+      init() { ... }
+}
+```
+
+Treeがコピーされた時、Tree全体がコピーされます。わたしたちのTreeの場合は、たくさんのmalloc/allocを呼び出すことが必要なとても高価なオペレーションであり、膨大なReference Countオーバーヘッドになります。
+
+しかし、もし値が値が持つセマンティクスと同じくらい長くメモリーにコピーされるなら、気にする必要ありません。
+
+## アドバイス: 大きな値にはcopy-on-writeを使うこと
+大きな値をコピーするコストを排除するには、copy-on-writeを採用しましょう。copy-on-writeの最も簡単な実装はArrayの様に、存在するcopy-on-write構造を構成することです。Swift arraysは常に値ですが、arrayの中身は、copy-on-writeのtraitの為、arrayが引数として渡される度にコピーされるわけではありません。
+
+Treeの例で、array内で、ラッピングによりTreeの中身をコピーするコストを排除します。この単純な変更は、Treeデータ構造のパフォーマンスに多大な影響を持ち、O(1)へのTreeのサイズにより、O(n)から落ちた引数としてのarrayを渡すコストにも大きな影響を持ちます。
+
+```swift
+struct Tree : P {
+  var note : [P?]
+  init() {
+    node = [thing]
+  }
+}
+```
+
+COWセマンティクスのArrayを使うことのディスアドバンテージは明確に2つあります。ひとつ目は、Arrayが、value wrapperの混んてキスので意味を成さない "count"や"append"の様なメソッドをむき出しにすることです。これらのメソッドはReference wrapperを扱いにくくします。使わないAPIを隠す構造体のwrapperを作成することでこの問題に働きかけることができ、Optimizerはこのオーバーヘッドを削除しますが、wrapperは次の問題を解決しません。2つめの問題は、Arrayはprogram safetyを求めるコードを持ち、Objective-Cと相互作用します。Swiftは、indexされたアクセスがarray boundsとともに落ちるかチェックます。それはarray storageが拡張が必要なら値を保存するときに行われます。これらのランタイムチェックは物事を遅くします。
+
+Arrayを使う代わりにvalue wrapperとしてArrayに変わるcopy-on-write構造を実装することがあります。
+
+```swift
+final class Ref<T> {
+  var val: T
+  init(_ v: T) {val = v}
+}
+
+struct Box<T> {
+  var ref : Ref<T>
+  init(_x : T) { ref = Ref(x) }
+
+  var value: T {
+    get { return ref.value }
+    set {
+      if !isUniquelyReferenceNonObjC(&Ref) {
+        ref = Ref(newValu)
+        return
+      }
+      ref.val = newValue
+    }
+  }
+}
+```
+
+この `Box` はArrayに置き換えられます。
 
 # Unsafe code
 Swiftのクラスは常にReferenceをカウントされます。Swiftのコンパイラはオブジェクトがアクセスされる度にReference Countを増加させます。例えば、クラスを使って実装されたLkinked listをスキャンする問題を考えてみてください。リストをスキャンすることは、あるノードから `elem = elem.next` へリファレンスを移動されることでなされます。私たちがReferenceを移動させる度に、Swiftは `next` オブジェクトへのReference Countを増加させ、以前のオブジェクトへの Reference Countを減少させます。これらのReference Count Operationはとても高価なものであり、Swiftクラスを使う際には、避けることができません。
