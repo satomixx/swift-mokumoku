@@ -1,7 +1,13 @@
 # Writing High-Performance Swift Code
 - [最適化を可能にする](#最適化を可能にする)
 - [モジュール全体の最適化](#モジュール全体の最適化)
-- [Dynamic Dispatchの削減]()
+- [Dynamic Dispatchの削減](#Dynamic Dispatchの削減)
+- [コンテナの型を効率的に使う](#コンテナの型を効率的に使う)
+- [Unchecked Operation](#Unchecked Operation)
+- [Generics](#Generics)
+- [The cost of large Swift values](#The cost of large Swift values)
+- [Unsafe code](#Unsafe code)
+- [Protocols](#Protocols)
 
 ## 最適化を可能にする
 最適化を可能にすることは常に第一にやるべきことです。Swiftに3つの異なる最適化のレベルがあります。
@@ -243,7 +249,7 @@ Game(10).play
 ```
 
 
-# The const of large Swift values
+# The cost of large Swift values
 Swiftでは、値はデータのユニークなコピーを保持します。値が特別な状態を保証するような、value-typesを使う幾つかのアドバンテージがあります。値をコピーするとき（assignmentの影響やinitialization、引数の引き渡し）、プログラムは新しい値のコピーを作ります。大きな値の場合は、これらのコピーには時間がかかり、プログラムのパフォーマンスにダメージを与えます。
 
 "value"ノードを使ったTreeを定義した以下の例を考えてみてください。Treeノードはprotocolを使う他のノードを持ちます。CGでは、シーンは、値として表現できる異なる権限や変異形から構成されたりします。なのでこの例は現実的だったりします。
