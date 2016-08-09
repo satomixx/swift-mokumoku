@@ -18,6 +18,7 @@ https://github.com/apple/swift/blob/master/docs/OptimizationTips.rst
 ## 安全性を確保の上でinteger overflowのチェックをしないことで、パフォーマンスは向上する
 
 ## Generics
+- 宣言と同じモジュールで使うこと
 
 ## protocolにはstructではなくclass
 
