@@ -4,7 +4,7 @@
 
 
 ## これまでの活動
-- 8. [Swiftアプリ開発 @その辺]()
+- 8. [Swiftアプリ開発 @その辺](https://github.com/satomiretriever/swift-mokumoku/blob/master/logs/008_20160810.md)
 - 7. [Swift3に関するドキュメントの読書会@その辺](https://github.com/satomiretriever/swift-mokumoku/blob/master/logs/007_20160809.md)
 - 6. [Swift3に関するドキュメントの読書会@その辺](https://github.com/satomiretriever/swift-mokumoku/blob/master/logs/006_20160805.md)
 - 5. [Swift3に関するドキュメントの読書会@その辺](https://github.com/satomiretriever/swift-mokumoku/blob/master/logs/005_20160804.md)
