@@ -3,7 +3,7 @@
 - [モジュール全体の最適化](#モジュール全体の最適化)
 - [Dynamic Dispatchの削減](#Dynamic Dispatchの削減)
 - [コンテナの型を効率的に使う](#コンテナの型を効率的に使う)
-- [Unchecked Operation](#Unchecked Operation)
+- [Unchecked Operation](#unchecked-operation)
 - [Generics](#Generics)
 - [The cost of large Swift values](#The cost of large Swift values)
 - [Unsafe code](#Unsafe code)
